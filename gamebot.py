@@ -1,18 +1,21 @@
 import tkinter as tk
 import socket
 import threading
+from dotenv import load_dotenv
+import os
 
-# Twitch IRC settings
-SERVER = "irc.chat.twitch.tv"
-PORT = 6667
-NICKNAME = "just_a_viewer_bot"
-TOKEN = "oauth:py0i8vdls2a9uiuntiqgqdwviwu566"     # << your hard-coded token
-CHANNEL = "#k1m6a"
+# Load .env variables
+load_dotenv()
+
+SERVER = os.getenv("SERVER")
+PORT = int(os.getenv("PORT"))
+NICKNAME = os.getenv("NICKNAME")
+TOKEN = os.getenv("TOKEN")
+CHANNEL = os.getenv("CHANNEL")
 
 votes = {
     "a": set(),
     "b": set(),
-    
 }
 
 root = tk.Tk()
@@ -22,7 +25,7 @@ root.configure(bg="midnight blue")
 
 title_label = tk.Label(
     root,
-    text="Choose between the options!",
+    text="",
     font=("Arial", 24, "bold"),
     fg="gold",
     bg="midnight blue"
@@ -40,7 +43,6 @@ question_label = tk.Label(
 )
 question_label.pack(pady=10)
 
-# ✅ WINNER LABEL
 winner_label = tk.Label(
     root,
     text="",
@@ -54,7 +56,7 @@ choices_frame = tk.Frame(root, bg="midnight blue")
 choices_frame.pack(pady=10)
 
 choice_buttons = {}
-choices = ["A) Paris", "B) Berlin",]
+choices = ["A)", "B)"]
 for choice in choices:
     btn = tk.Button(
         choices_frame,
@@ -78,9 +80,16 @@ timer_label = tk.Label(
 )
 timer_label.pack(pady=20)
 
+# Frame to hold control buttons
+control_frame = tk.Frame(root, bg="midnight blue")
+control_frame.pack(pady=10)
+
+time_left = 30
+timer_running = False
+
 def update_buttons():
     total_votes = sum(len(v) for v in votes.values())
-    for key, btn in zip(["a", "b", "c", "d"], choice_buttons.values()):
+    for key, btn in zip(["a", "b"], choice_buttons.values()):
         count = len(votes[key])
         percentage = (count / total_votes * 100) if total_votes else 0
         original_text = btn.cget("text").split("(")[0].strip()
@@ -105,7 +114,7 @@ def connect_to_twitch():
                     username = resp.split("!", 1)[0][1:]
                     message = resp.split("PRIVMSG", 1)[1].split(":", 1)[1].strip().lower()
 
-                    if message in votes and not any(username in v for v in votes.values()):
+                    if timer_running and message in votes and not any(username in v for v in votes.values()):
                         votes[message].add(username)
                         root.after(0, update_buttons)
 
@@ -115,16 +124,38 @@ def connect_to_twitch():
 
     threading.Thread(target=loop, daemon=True).start()
 
-time_left = 30
+def start_voting():
+    global time_left, timer_running
+    if not timer_running:
+        time_left = 30
+        timer_running = True
+        winner_label.config(text="", fg="white")
+        for btn in choice_buttons.values():
+            btn.config(state="normal", bg="navy", fg="white")
+        update_buttons()
+        countdown()
+
+def reset_voting():
+    global time_left, votes, timer_running
+    time_left = 30
+    timer_running = False
+    votes = {"a": set(), "b": set()}
+    timer_label.config(text=f"Time Left: {time_left}s")
+    winner_label.config(text="", fg="white")
+    for btn in choice_buttons.values():
+        btn.config(state="normal", bg="navy", fg="white")
+    update_buttons()
 
 def countdown():
-    global time_left
-    timer_label.config(text=f"Time Left: {time_left}s")
-    if time_left > 0:
-        time_left -= 1
-        root.after(1000, countdown)
-    else:
-        end_question()
+    global time_left, timer_running
+    if timer_running:
+        timer_label.config(text=f"Time Left: {time_left}s")
+        if time_left > 0:
+            time_left -= 1
+            root.after(1000, countdown)
+        else:
+            timer_running = False
+            end_question()
 
 def end_question():
     winner_key, winner_users = max(votes.items(), key=lambda x: len(x[1]), default=(None, []))
@@ -133,7 +164,7 @@ def end_question():
         winner_text = f"Winner is {winner_key.upper()} with {len(winner_users)} votes!"
         winner_label.config(text=winner_text, fg="gold")
 
-        for key, btn in zip(["a", "b",], choice_buttons.values()):
+        for key, btn in zip(["a", "b"], choice_buttons.values()):
             if key == winner_key:
                 btn.config(bg="gold", fg="black")
             else:
@@ -143,6 +174,27 @@ def end_question():
 
     print("Voting ended.")
 
+start_button = tk.Button(
+    control_frame,
+    text="Start",
+    font=("Arial", 14),
+    bg="green",
+    fg="white",
+    width=10,
+    command=start_voting
+)
+start_button.pack(side="left", padx=10)
+
+reset_button = tk.Button(
+    control_frame,
+    text="Reset",
+    font=("Arial", 14),
+    bg="red",
+    fg="white",
+    width=10,
+    command=reset_voting
+)
+reset_button.pack(side="left", padx=10)
+
 connect_to_twitch()
-countdown()
 root.mainloop()
