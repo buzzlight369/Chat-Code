@@ -1,81 +1,80 @@
-import socket
-import threading
 import tkinter as tk
-from tkinter import Canvas
+from tkinter import ttk
 
-# Twitch IRC settings
-SERVER = "irc.chat.twitch.tv"
-PORT = 6667
-NICKNAME = "just_a_viewer_bot"
-TOKEN = "oauth:py0i8vdls2a9uiuntiqgqdwviwu566"
-CHANNEL = "#k1m6a"
-
-votes = {
-    "a": set(),
-    "b": set(),
-    "c": set(),
-    "d": set()
-}
-
-# GUI Setup
+# Create the main window
 root = tk.Tk()
-root.title("Twitch Multi-Vote Tracker (A/B/C/D)")
+root.title("chatgame")
+root.geometry("600x400")
+root.configure(bg="midnight blue")
 
-canvas = Canvas(root, width=500, height=300, bg="black")
-canvas.pack(padx=10, pady=10)
+# Title Label
+title_label = tk.Label(
+    root,
+    text="game for chat",
+    font=("Arial", 24, "bold"),
+    fg="gold",
+    bg="midnight blue"
+)
+title_label.pack(pady=20)
 
-label = tk.Label(root, text="", font=("Arial", 14), fg="white", bg="black")
-label.pack()
+# Question Label
+question_label = tk.Label(
+    root,
+    text="What is the capital of France?",
+    font=("Arial", 16),
+    fg="white",
+    bg="midnight blue",
+    wraplength=550,
+    justify="center"
+)
+question_label.pack(pady=10)
 
-bar_colors = {"a": "red", "b": "blue", "c": "green", "d": "yellow"}
-bar_labels = {"a": "A", "b": "B", "c": "C", "d": "D"}
+# Frame for choices
+choices_frame = tk.Frame(root, bg="midnight blue")
+choices_frame.pack(pady=10)
 
-def update_visuals():
-    canvas.delete("all")
-    total_height = 200
-    max_votes = max((len(v) for v in votes.values()), default=1)
-    bar_width = 80
-    spacing = 30
+# Four answer buttons
+choice_buttons = {}
+choices = ["A) Paris", "B) Berlin", "C) Rome", "D) Madrid"]
 
-    sorted_votes = sorted(votes.items(), key=lambda x: len(x[1]), reverse=True)
-    label_text = "Leaderboard: " + " | ".join([f"{bar_labels[k]}: {len(v)}" for k, v in sorted_votes])
-    label.config(text=label_text)
+for choice in choices:
+    btn = tk.Button(
+        choices_frame,
+        text=choice,
+        font=("Arial", 14),
+        width=30,
+        bg="navy",
+        fg="white",
+        activebackground="gold",
+        activeforeground="black"
+    )
+    btn.pack(pady=5)
+    choice_buttons[choice] = btn
 
-    for idx, (key, user_set) in enumerate(votes.items()):
-        bar_height = (len(user_set) / max_votes) * total_height if max_votes else 0
-        x0 = spacing + idx * (bar_width + spacing)
-        y0 = total_height - bar_height + 50
-        x1 = x0 + bar_width
-        y1 = total_height + 50
-        canvas.create_rectangle(x0, y0, x1, y1, fill=bar_colors[key])
-        canvas.create_text((x0 + x1)//2, y0 - 15, text=f"{bar_labels[key]}: {len(user_set)}", fill="white")
+# Timer label
+timer_label = tk.Label(
+    root,
+    text="Time Left: 30s",
+    font=("Arial", 16),
+    fg="white",
+    bg="midnight blue"
+)
+timer_label.pack(pady=20)
 
-def connect_to_twitch():
-    sock = socket.socket()
-    sock.connect((SERVER, PORT))
-    sock.send(f"PASS {TOKEN}\r\n".encode("utf-8"))
-    sock.send(f"NICK {NICKNAME}\r\n".encode("utf-8"))
-    sock.send(f"JOIN {CHANNEL}\r\n".encode("utf-8"))
+# Lifeline buttons (optional)
+lifeline_frame = tk.Frame(root, bg="midnight blue")
+lifeline_frame.pack(pady=10)
 
-    def loop():
-        while True:
-            try:
-                resp = sock.recv(2048).decode("utf-8")
-                if resp.startswith("PING"):
-                    sock.send("PONG\r\n".encode("utf-8"))
-                    continue
+lifelines = ["50:50", "Ask the Audience", "Phone a Friend"]
+for lifeline in lifelines:
+    btn = tk.Button(
+        lifeline_frame,
+        text=lifeline,
+        font=("Arial", 12),
+        width=15,
+        bg="dark green",
+        fg="white"
+    )
+    btn.pack(side="left", padx=10)
 
-                if "PRIVMSG" in resp:
-                    username = resp.split("!", 1)[0][1:]
-                    message = resp.split("PRIVMSG", 1)[1].split(":", 1)[1].strip().lower()
-                    if message in votes and not any(username in v for v in votes.values()):
-                        votes[message].add(username)
-                        update_visuals()
-            except Exception as e:
-                print("Error:", e)
-                break
-
-    threading.Thread(target=loop, daemon=True).start()
-
-connect_to_twitch()
 root.mainloop()
