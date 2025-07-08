@@ -31,7 +31,7 @@ title_label.pack(pady=20)
 
 question_label = tk.Label(
     root,
-    text="What is the capital of France?",
+    text="You get to choose the star of the show!",
     font=("Arial", 16),
     fg="white",
     bg="midnight blue",
