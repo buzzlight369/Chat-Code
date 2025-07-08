@@ -12,18 +12,17 @@ CHANNEL = "#k1m6a"
 votes = {
     "a": set(),
     "b": set(),
-    "c": set(),
-    "d": set()
+    
 }
 
 root = tk.Tk()
-root.title("Chat Millionaire")
+root.title("You get to choose the star of the show!")
 root.geometry("600x500")
 root.configure(bg="midnight blue")
 
 title_label = tk.Label(
     root,
-    text="Game for Chat",
+    text="Choose between the options!",
     font=("Arial", 24, "bold"),
     fg="gold",
     bg="midnight blue"
@@ -41,12 +40,21 @@ question_label = tk.Label(
 )
 question_label.pack(pady=10)
 
+# ✅ WINNER LABEL
+winner_label = tk.Label(
+    root,
+    text="",
+    font=("Arial", 18, "bold"),
+    fg="white",
+    bg="midnight blue"
+)
+winner_label.pack(pady=10)
+
 choices_frame = tk.Frame(root, bg="midnight blue")
 choices_frame.pack(pady=10)
 
 choice_buttons = {}
-choices = ["A) Paris", "B) Berlin", "C) Rome", "D) Madrid"]
-
+choices = ["A) Paris", "B) Berlin",]
 for choice in choices:
     btn = tk.Button(
         choices_frame,
@@ -119,13 +127,21 @@ def countdown():
         end_question()
 
 def end_question():
-    winner = max(votes.items(), key=lambda x: len(x[1]), default=(None, []))[0]
-    if winner:
-        print(f"Winning choice: {winner.upper()} with {len(votes[winner])} votes.")
+    winner_key, winner_users = max(votes.items(), key=lambda x: len(x[1]), default=(None, []))
+    
+    if winner_key:
+        winner_text = f"Winner is {winner_key.upper()} with {len(winner_users)} votes!"
+        winner_label.config(text=winner_text, fg="gold")
+
+        for key, btn in zip(["a", "b",], choice_buttons.values()):
+            if key == winner_key:
+                btn.config(bg="gold", fg="black")
+            else:
+                btn.config(state="disabled", bg="gray", fg="white")
     else:
-        print("No votes received.")
-    for btn in choice_buttons.values():
-        btn.config(state="disabled")
+        winner_label.config(text="No votes received.", fg="red")
+
+    print("Voting ended.")
 
 connect_to_twitch()
 countdown()
