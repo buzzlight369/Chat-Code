@@ -1,17 +1,14 @@
 import tkinter as tk
 import socket
 import threading
-from dotenv import load_dotenv
 import os
 
-# Load .env variables
-load_dotenv()
 
-SERVER = os.getenv("SERVER")
-PORT = int(os.getenv("PORT"))
-NICKNAME = os.getenv("NICKNAME")
-TOKEN = os.getenv("TOKEN")
-CHANNEL = os.getenv("CHANNEL")
+SERVER="irc.chat.twitch.tv"
+PORT=6667
+NICKNAME="just_a_viewer_bot"
+TOKEN="oauth:py0i8vdls2a9uiuntiqgqdwviwu566"
+CHANNEL="#k1m6a"
 
 votes = {
     "a": set(),
